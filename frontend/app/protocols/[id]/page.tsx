@@ -136,7 +136,11 @@ export default function ProtocolDetailPage() {
                       <tbody>
                         {policies.map(({ id: pid, data }) => (
                           <tr key={pid} className="border-b border-border/50 last:border-0">
-                            <td className="py-2.5 pr-4 font-mono text-xs">#{pid}</td>
+                            <td className="py-2.5 pr-4 font-mono text-xs">
+                              <Link href={`/policies/${pid}`} className="underline-offset-4 hover:underline">
+                                #{pid}
+                              </Link>
+                            </td>
                             <td className="py-2.5 pr-4 font-mono text-xs" title={data.holder}>
                               {data.holder.slice(0, 10)}…
                             </td>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HandCoins, Wallet } from "lucide-react";
 import { TxNote, btnGhost, btnPrimary, cardCls, inputCls, labelCls, type Note, Spinner } from "@/components/ui-bits";
 import { formatProviderError } from "@/lib/wallets";
@@ -20,6 +20,20 @@ export function Claims({
   const [incidentId, setIncidentId] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<Note | null>(null);
+
+  // Prefill from policy detail links, e.g. /claims?policy=3&incident=1.
+  // Read on mount (client-only) so no Suspense boundary is needed.
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const p = q.get("policy");
+      const i = q.get("incident");
+      if (p) setPolicyId(p);
+      if (i) setIncidentId(i);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const run = async (key: string, fn: () => Promise<{ hash: string }>, done: string) => {
     if (busy) return;
