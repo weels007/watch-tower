@@ -58,10 +58,11 @@ export type ExternalWallet = {
 };
 
 const ACCOUNT_KEY = "watchtower.account";
-const CACHE_KEY = "watchtower.cache.v1";
+const CACHE_KEY = `watchtower.cache.v1.${CONTRACT_ADDRESS.toLowerCase()}`;
 
 type Snapshot = {
   ts: number;
+  address?: string;
   pool: string | null;
   protocols: { id: string; data: Protocol }[];
   incidents: { id: string; data: Incident }[];
@@ -69,10 +70,14 @@ type Snapshot = {
 
 function readCache(): Snapshot | null {
   try {
+    // Drop the legacy unkeyed snapshot so pre-fix data can never resurface.
+    window.localStorage.removeItem("watchtower.cache.v1");
     const raw = window.localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const snap = JSON.parse(raw) as Snapshot;
     if (!snap || typeof snap.ts !== "number" || !Array.isArray(snap.protocols)) return null;
+    // Never mix snapshots across contract deployments.
+    if (snap.address?.toLowerCase() !== CONTRACT_ADDRESS.toLowerCase()) return null;
     return snap;
   } catch {
     return null;
@@ -81,7 +86,10 @@ function readCache(): Snapshot | null {
 
 function writeCache(snap: Snapshot) {
   try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(snap));
+    window.localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ ...snap, address: CONTRACT_ADDRESS.toLowerCase() }),
+    );
   } catch {
     /* storage unavailable or full */
   }
