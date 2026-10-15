@@ -30,6 +30,17 @@ ERROR_TRANSIENT = "[TRANSIENT]"
 ERROR_LLM = "[LLM_ERROR]"
 
 
+@gl.evm.contract_interface
+class _EoaPayout:
+    # Recipient lives on the chain layer (EOA), so payouts go out as an
+    # external message through the ghost contract (see value-transfers docs).
+    class View:
+        pass
+
+    class Write:
+        pass
+
+
 @allow_storage
 @dataclass
 class Protocol:
@@ -389,8 +400,11 @@ Return JSON with keys:
         bal = self.claimable.get(holder, u256(0))
         if bal <= u256(0):
             raise gl.vm.UserError(f"{ERROR_EXPECTED} Nothing to withdraw")
-        # MVP accounting: reset claimable. Native transfer dihubungkan di frontend/deployer.
+        # Real GEN transfer to the holder's wallet (external message via the
+        # ghost contract, executes on finalization). Accounting is cleared
+        # first so a retry can never double-pay.
         self.claimable[holder] = u256(0)
+        _EoaPayout(holder).emit_transfer(value=bal)
 
     # ---------- views ----------
 
@@ -436,6 +450,11 @@ Return JSON with keys:
     @gl.public.view
     def get_pool_balance(self) -> int:
         return int(self.pool_balance)
+
+    @gl.public.view
+    def get_contract_balance(self) -> str:
+        # Real GEN held by the contract (premiums in, withdrawals out).
+        return str(self.balance)
 
     @gl.public.view
     def get_claimable(self, holder: Address) -> int:

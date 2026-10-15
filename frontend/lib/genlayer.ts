@@ -15,7 +15,7 @@ import {
 } from "@/lib/wallets";
 
 export const CONTRACT_ADDRESS =
-  "0x75a82361b32DFE26aFA481c7FB93a692517f21F7" as const;
+  "0x8fFD5385360b82d0Ac36b8e9F00B9A42c36595f5" as const;
 
 /** Same-origin RPC proxy (see app/api/rpc) — avoids Studio CORS blocks. */
 const RPC_ENDPOINT = "/api/rpc";
