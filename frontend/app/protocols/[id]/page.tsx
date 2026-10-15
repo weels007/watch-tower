@@ -8,7 +8,7 @@ import { CONTRACT_ADDRESS, type Policy, type Protocol } from "@/lib/genlayer";
 import { formatGen } from "@/lib/format";
 import { useWatchtowerContext } from "@/components/watchtower-provider";
 import { ActivePill } from "@/components/protocols";
-import { Badge, cardCls } from "@/components/ui-bits";
+import { cardCls } from "@/components/ui-bits";
 
 export default function ProtocolDetailPage() {
   const params = useParams();
@@ -143,7 +143,15 @@ export default function ProtocolDetailPage() {
                             <td className="py-2.5 pr-4 text-right tabular-nums">{formatGen(data.premium)}</td>
                             <td className="py-2.5 pr-4 text-right tabular-nums">{formatGen(data.coverage)}</td>
                             <td className="py-2.5 text-right">
-                              <Badge value={data.active ? "pending" : "rejected"} />
+                              <span
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-xs ${
+                                  data.active
+                                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                                    : "border-border bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                {data.active ? "active" : "claimed"}
+                              </span>
                             </td>
                           </tr>
                         ))}
