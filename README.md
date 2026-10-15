@@ -63,7 +63,7 @@ flowchart LR
 
 **Consensus design** (`run_nondet_unsafe` + custom validator): the validator re-runs the whole evidence-fetch + LLM task and compares only the decision fields (`violation`, `payout_eligible`, `severity`) — reasoning text may differ. Errors are classified (`[EXPECTED]` / `[TRANSIENT]` / `[LLM_ERROR]`) so validators agree on deterministic failures and retry on flaky ones.
 
-> **Live on studionet:** `0xA5EAe168C1bA21D2274153ACc87Fb2C0FF74D0ea`
+> **Live on studionet:** `0x75a82361b32DFE26aFA481c7FB93a692517f21F7`
 
 ## 🧪 Test Report
 
@@ -134,7 +134,7 @@ frontend/                     # Next.js dApp (app router + genlayer-js)
 ## 📚 Links
 
 - [GenLayer docs](https://docs.genlayer.com/) · [GenLayerJS](https://docs.genlayer.com/api-references/genlayer-js) · [Studio](https://studio.genlayer.com/)
-- [Contract in Studio](https://studio.genlayer.com/contracts/0xA5EAe168C1bA21D2274153ACc87Fb2C0FF74D0ea)
+- [Contract in Studio](https://studio.genlayer.com/contracts/0x75a82361b32DFE26aFA481c7FB93a692517f21F7)
 
 ## License
 

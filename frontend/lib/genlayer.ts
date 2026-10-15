@@ -15,7 +15,7 @@ import {
 } from "@/lib/wallets";
 
 export const CONTRACT_ADDRESS =
-  "0xA5EAe168C1bA21D2274153ACc87Fb2C0FF74D0ea" as const;
+  "0x75a82361b32DFE26aFA481c7FB93a692517f21F7" as const;
 
 export type Protocol = {
   name: string;
@@ -369,7 +369,24 @@ export function useWatchtower() {
         args,
         value: BigInt(value),
       })) as string;
-      const receipt = await client.waitForTransactionReceipt({ hash });
+      // Shared studionet consensus varies with load and rotation rounds —
+      // allow up to ~20 minutes instead of the SDK's ~2.5 minute default.
+      let receipt: unknown;
+      try {
+        receipt = await client.waitForTransactionReceipt({
+          hash,
+          interval: 5000,
+          retries: 240,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/timed out|timeout/i.test(msg)) {
+          throw new Error(
+            `Consensus is taking longer than usual and is still processing (tx ${hash.slice(0, 12)}…). Wait a bit, then hit Refresh — your transaction is not lost.`,
+          );
+        }
+        throw e;
+      }
       await refresh({ silent: true });
       return { hash, receipt };
     },
