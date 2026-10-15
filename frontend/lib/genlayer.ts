@@ -17,6 +17,9 @@ import {
 export const CONTRACT_ADDRESS =
   "0x75a82361b32DFE26aFA481c7FB93a692517f21F7" as const;
 
+/** Same-origin RPC proxy (see app/api/rpc) — avoids Studio CORS blocks. */
+const RPC_ENDPOINT = "/api/rpc";
+
 export type Protocol = {
   name: string;
   monitor_endpoint: string;
@@ -145,6 +148,7 @@ export function useWatchtower() {
         chain: studionet,
         account: address as `0x${string}`,
         provider: provider as never,
+        endpoint: RPC_ENDPOINT,
       });
       setClient(wc);
       return wc;
@@ -161,7 +165,7 @@ export function useWatchtower() {
     rememberWallet(null);
     // Fall back to the local burner identity for reads and writes.
     if (accountRef.current) {
-      setClient(createClient({ chain: studionet, account: accountRef.current }));
+      setClient(createClient({ chain: studionet, account: accountRef.current, endpoint: RPC_ENDPOINT }));
     }
   }, [detachListener]);
 
@@ -235,7 +239,7 @@ export function useWatchtower() {
     if (!acc) return;
     accountRef.current = acc;
     setAccount(acc);
-    setClient(createClient({ chain: studionet, account: acc }));
+    setClient(createClient({ chain: studionet, account: acc, endpoint: RPC_ENDPOINT }));
   }, []);
 
   // Silent auto-restore: if the same wallet announces itself again and is

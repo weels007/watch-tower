@@ -148,7 +148,7 @@ export async function switchToStudionet(provider: EIP1193Provider): Promise<void
           chainName: "Genlayer Studio Network",
           rpcUrls: ["https://studio.genlayer.com/api"],
           nativeCurrency: { name: "GEN Token", symbol: "GEN", decimals: 18 },
-          blockExplorerUrls: ["https://genlayer-explorer.vercel.app"],
+          blockExplorerUrls: ["https://explorer-studio.genlayer.com"],
         },
       ],
     });

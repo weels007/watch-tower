@@ -140,6 +140,14 @@ export function ConsensusPanel({ hash }: { hash: string | null }) {
           <p className="mt-3 break-all font-mono text-[11px] text-muted-foreground" title={hash}>
             tx {hash}
           </p>
+          <a
+            href={`https://explorer-studio.genlayer.com/tx/${hash}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            View transaction in explorer →
+          </a>
         </>
       )}
     </div>

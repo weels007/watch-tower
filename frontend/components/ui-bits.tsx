@@ -71,8 +71,17 @@ export function TxNote({ note }: { note: Note | null }) {
         <span>{note.text}{elapsed}</span>
       </p>
       {note.hash && (
-        <p className="mt-1 break-all font-mono opacity-80" title={note.hash}>
-          tx {note.hash.slice(0, 18)}…{note.hash.slice(-8)}
+        <p className="mt-1 break-all font-mono opacity-80">
+          tx{" "}
+          <a
+            href={`https://explorer-studio.genlayer.com/tx/${note.hash}`}
+            target="_blank"
+            rel="noreferrer"
+            className="underline-offset-4 hover:underline"
+            title={note.hash}
+          >
+            {note.hash.slice(0, 18)}…{note.hash.slice(-8)}
+          </a>
         </p>
       )}
     </div>
