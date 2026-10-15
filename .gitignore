@@ -1,0 +1,25 @@
+# Python / GenLayer
+__pycache__/
+*.py[cod]
+.pytest_cache/
+artifacts/
+.env
+!.env.example
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
+
+# Wallets & secrets — NEVER commit
+**/*keystore*.json
+**/*.password
+**/global.password
+*.pem
+*.key
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
