@@ -19,6 +19,17 @@ export function parseGen(input: string): bigint | null {
   }
 }
 
+/** Unix seconds -> short UTC date. Accepts number or numeric string. */
+export function formatTs(value: number | string): string {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n) || n <= 0) return "—";
+  try {
+    return new Date(n * 1000).toISOString().slice(0, 16).replace("T", " ");
+  } catch {
+    return String(value);
+  }
+}
+
 /** 1500000000000000000n -> "1.5". Accepts bigint, number or numeric string. */
 export function formatGen(value: bigint | number | string): string {
   let bi: bigint;

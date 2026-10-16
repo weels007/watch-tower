@@ -10,7 +10,7 @@ import { useWatchtowerContext } from "@/components/watchtower-provider";
 import { ConsensusPanel } from "@/components/consensus-panel";
 import { Badge, TxNote, btnGhost, cardCls, safeUrl, type Note, Spinner } from "@/components/ui-bits";
 import { formatProviderError } from "@/lib/wallets";
-import { formatGen } from "@/lib/format";
+import { formatGen, formatTs } from "@/lib/format";
 
 export default function IncidentDetailPage() {
   const params = useParams();
@@ -177,6 +177,10 @@ export default function IncidentDetailPage() {
                     <dd className="truncate font-mono text-xs" title={incident.reporter}>
                       {incident.reporter.slice(0, 10)}…
                     </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Reported</dt>
+                    <dd className="font-mono text-xs">{formatTs(incident.reported_at)} UTC</dd>
                   </div>
                 </dl>
                 {incident.status === "pending" && (

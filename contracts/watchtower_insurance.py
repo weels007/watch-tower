@@ -11,7 +11,7 @@ Flow:
   3. anyone report_incident(...) - laporan pelanggaran + evidence_url
   4. anyone evaluate_incident(...) - LLM+web consensus: violation? severity? payout?
   5. holder payout_claim(...) - payout dari pool ke claimable balance
-  6. holder withdraw() - tarik claimable (accounting MVP)
+  6. holder withdraw() - real GEN transfer to holder wallet via emit_transfer
 
 Boundary:
   - GenLayer owns: evidence fetch, LLM judgment, consensus on violation/payout,
@@ -22,12 +22,22 @@ Boundary:
 
 from genlayer import *
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 
 ERROR_EXPECTED = "[EXPECTED]"
 ERROR_EXTERNAL = "[EXTERNAL]"
 ERROR_TRANSIENT = "[TRANSIENT]"
 ERROR_LLM = "[LLM_ERROR]"
+
+# Minimum premium rate enforced in purchase_coverage: 1 percent of coverage.
+# Explicit on-chain rule so the shared pool cannot be drained by
+# underpriced coverage (premium * 100 >= coverage).
+
+
+def _now() -> u256:
+    # Deterministic tx timestamp: identical for leader and validators.
+    return u256(int(datetime.now(timezone.utc).timestamp()))
 
 
 @gl.evm.contract_interface
@@ -60,7 +70,7 @@ class Policy:
     premium: u256
     coverage: u256
     active: bool
-    created_at: str
+    created_at: u256  # tx timestamp: coverage must predate any incident it claims on
 
 
 @allow_storage
@@ -70,11 +80,15 @@ class Incident:
     reporter: Address
     evidence_url: str
     description: str
-    status: str  # pending | confirmed_violation | rejected | paid
+    # pending | confirmed_violation | confirmed_no_payout | rejected
+    # (never "paid": payouts are tracked per policy so one incident can serve
+    # many holders without closing for the rest)
+    status: str
     severity: str  # none | low | medium | high | critical
     confidence: u256  # 0-100
     reasoning: str
-    payout_amount: u256
+    payout_amount: u256  # cumulative across all policies that claimed
+    reported_at: u256  # tx timestamp of the report
 
 
 class WatchtowerInsurance(gl.Contract):
@@ -147,6 +161,8 @@ class WatchtowerInsurance(gl.Contract):
         premium: u256 = gl.message.value
         if premium <= u256(0):
             raise gl.vm.UserError(f"{ERROR_EXPECTED} Premium (payable value) must be > 0")
+        if premium * u256(100) < coverage:
+            raise gl.vm.UserError(f"{ERROR_EXPECTED} Premium below 1 percent of coverage")
 
         self.policy_counter = self.policy_counter + u256(1)
         policy_id = str(int(self.policy_counter))
@@ -157,7 +173,7 @@ class WatchtowerInsurance(gl.Contract):
             premium=premium,
             coverage=coverage,
             active=True,
-            created_at=policy_id,
+            created_at=_now(),
         )
         self.policy_ids.append(policy_id)
         proto.total_policies = proto.total_policies + u256(1)
@@ -187,6 +203,7 @@ class WatchtowerInsurance(gl.Contract):
             confidence=u256(0),
             reasoning="",
             payout_amount=u256(0),
+            reported_at=_now(),
         )
         self.incident_ids.append(incident_id)
         return incident_id
@@ -351,7 +368,10 @@ Return JSON with keys:
         if violation and payout_eligible:
             updated.status = "confirmed_violation"
         elif violation:
-            updated.status = "confirmed_violation"
+            # Violation proven but consensus says no payout (e.g. evidence
+            # insufficient for coverage terms). Never payable: payout_claim
+            # only accepts confirmed_violation.
+            updated.status = "confirmed_no_payout"
         else:
             updated.status = "rejected"
         updated.severity = severity
@@ -378,7 +398,9 @@ Return JSON with keys:
         if pol.protocol_id != inc.protocol_id:
             raise gl.vm.UserError(f"{ERROR_EXPECTED} Protocol mismatch")
         if inc.status != "confirmed_violation":
-            raise gl.vm.UserError(f"{ERROR_EXPECTED} Incident not confirmed")
+            raise gl.vm.UserError(f"{ERROR_EXPECTED} Incident not payable")
+        if pol.created_at >= inc.reported_at:
+            raise gl.vm.UserError(f"{ERROR_EXPECTED} Policy must predate incident")
         if self.pool_balance <= u256(0):
             raise gl.vm.UserError(f"{ERROR_EXPECTED} Pool empty")
 
@@ -388,8 +410,9 @@ Return JSON with keys:
         self.pool_balance = self.pool_balance - amount
         pol.active = False
         self.policies[policy_id] = pol
-        inc.status = "paid"
-        inc.payout_amount = amount
+        # Per-policy tracking: the incident stays confirmed_violation so other
+        # eligible holders can still claim. Payouts accumulate on the incident.
+        inc.payout_amount = inc.payout_amount + amount
         self.incidents[incident_id] = inc
         prev = self.claimable.get(pol.holder, u256(0))
         self.claimable[pol.holder] = prev + amount
@@ -429,7 +452,7 @@ Return JSON with keys:
             "premium": int(p.premium),
             "coverage": int(p.coverage),
             "active": p.active,
-            "created_at": p.created_at,
+            "created_at": int(p.created_at),
         }
 
     @gl.public.view
@@ -445,6 +468,7 @@ Return JSON with keys:
             "confidence": int(i.confidence),
             "reasoning": i.reasoning,
             "payout_amount": int(i.payout_amount),
+            "reported_at": int(i.reported_at),
         }
 
     @gl.public.view

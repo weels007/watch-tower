@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { CONTRACT_ADDRESS, type Policy, type Protocol } from "@/lib/genlayer";
-import { formatGen } from "@/lib/format";
+import { formatGen, formatTs } from "@/lib/format";
 import { useWatchtowerContext } from "@/components/watchtower-provider";
 import { Badge, cardCls } from "@/components/ui-bits";
 
@@ -123,6 +123,10 @@ export default function PolicyDetailPage() {
                         {protocol?.data.name ?? policy.protocol_id}
                       </Link>
                     </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Issued (must predate any claim)</dt>
+                    <dd className="mt-1 font-mono text-sm">{formatTs(policy.created_at)} UTC</dd>
                   </div>
                 </dl>
               </article>

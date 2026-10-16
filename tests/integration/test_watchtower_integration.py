@@ -105,7 +105,7 @@ def test_evaluate_reaches_consensus():
     assert tx_execution_succeeded(receipt)
 
     incident = contract.get_incident(args=["1"]).call()
-    assert incident["status"] in ("confirmed_violation", "rejected")
+    assert incident["status"] in ("confirmed_violation", "confirmed_no_payout", "rejected")
     assert incident["severity"] in ("none", "low", "medium", "high", "critical")
 
 
@@ -191,7 +191,8 @@ def test_full_payout_and_withdraw():
     assert tx_execution_succeeded(receipt)
 
     paid = contract.get_incident(args=["1"]).call()
-    assert paid["status"] == "paid"
+    # incident stays open for other holders; payouts accumulate per policy
+    assert paid["status"] == "confirmed_violation"
     assert paid["payout_amount"] == 1500
     assert contract.get_pool_balance(args=[]).call() == 500
     assert contract.get_claimable(args=[holder]).call() == 1500
@@ -201,10 +202,71 @@ def test_full_payout_and_withdraw():
     assert tx_execution_succeeded(receipt)
     assert contract.get_claimable(args=[holder]).call() == 0
 
-    # double-claim, re-evaluate of paid incident, and empty withdraw must fail
+    # double-claim, re-evaluate of decided incident, and empty withdraw must fail
     assert tx_execution_failed(contract.payout_claim(args=["1", "1"]).transact())
     assert tx_execution_failed(contract.evaluate_incident(args=["1"]).transact())
     assert tx_execution_failed(contract.withdraw().transact())
+
+
+def _evaluate_until_decided(contract, incident_id="1"):
+    receipt = contract.evaluate_incident(args=[incident_id]).transact()
+    assert tx_execution_succeeded(receipt)
+    incident = contract.get_incident(args=[incident_id]).call()
+    if incident["status"] == "pending":
+        receipt = contract.evaluate_incident(args=[incident_id]).transact()
+        assert tx_execution_succeeded(receipt)
+        incident = contract.get_incident(args=[incident_id]).call()
+    return incident
+
+
+def test_two_policies_claim_same_incident():
+    """Steward case: one incident serves many holders; double-claim blocked."""
+    contract = _deploy()
+    pid = _register_slashable(contract)
+
+    receipt = contract.purchase_coverage(args=[pid, 1000]).transact(value=1000)
+    assert tx_execution_succeeded(receipt)
+    receipt = contract.purchase_coverage(args=[pid, 1000]).transact(value=1000)
+    assert tx_execution_succeeded(receipt)
+
+    receipt = contract.report_incident(
+        args=[pid, VIOLATION_EVIDENCE_URL, "Validator 0xABC double-signed block 12345"]
+    ).transact()
+    assert tx_execution_succeeded(receipt)
+
+    incident = _evaluate_until_decided(contract)
+    assert incident["status"] == "confirmed_violation", f"LLM rejected: {incident}"
+
+    receipt = contract.payout_claim(args=["1", "1"]).transact()
+    assert tx_execution_succeeded(receipt)
+    assert contract.get_incident(args=["1"]).call()["status"] == "confirmed_violation"
+    assert contract.get_incident(args=["1"]).call()["payout_amount"] == 1000
+
+    receipt = contract.payout_claim(args=["2", "1"]).transact()
+    assert tx_execution_succeeded(receipt)
+    assert contract.get_incident(args=["1"]).call()["payout_amount"] == 2000
+    assert contract.get_pool_balance(args=[]).call() == 0  # 2000 - 1000 - 1000
+
+
+def test_post_incident_policy_cannot_claim():
+    """Steward case: coverage bought after the report cannot claim on it."""
+    contract = _deploy()
+    pid = _register_slashable(contract)
+
+    receipt = contract.report_incident(
+        args=[pid, VIOLATION_EVIDENCE_URL, "Validator 0xABC double-signed block 12345"]
+    ).transact()
+    assert tx_execution_succeeded(receipt)
+
+    # on-chain seconds separate report and purchase: coverage is newer
+    receipt = contract.purchase_coverage(args=[pid, 1000]).transact(value=1000)
+    assert tx_execution_succeeded(receipt)
+
+    incident = _evaluate_until_decided(contract)
+    assert incident["status"] == "confirmed_violation", f"LLM rejected: {incident}"
+
+    receipt = contract.payout_claim(args=["1", "1"]).transact()
+    assert tx_execution_failed(receipt)
 
 
 def test_claim_gates_non_holder_mismatch():

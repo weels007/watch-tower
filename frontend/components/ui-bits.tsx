@@ -18,6 +18,7 @@ export const labelCls = "mb-1.5 block text-xs font-medium text-muted-foreground"
 const tone: Record<string, string> = {
   pending: "border-amber-400/30 bg-amber-400/10 text-amber-300",
   confirmed_violation: "border-red-400/30 bg-red-400/10 text-red-300",
+  confirmed_no_payout: "border-sky-400/30 bg-sky-400/10 text-sky-300",
   rejected: "border-border bg-muted text-muted-foreground",
   paid: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
   none: "border-border bg-muted text-muted-foreground",

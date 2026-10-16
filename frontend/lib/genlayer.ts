@@ -15,7 +15,7 @@ import {
 } from "@/lib/wallets";
 
 export const CONTRACT_ADDRESS =
-  "0x8fFD5385360b82d0Ac36b8e9F00B9A42c36595f5" as const;
+  "0x3E4701C8bAe58E4ccF9f8EBdc1C3e1C9CE1ae3a0" as const;
 
 /** Same-origin RPC proxy (see app/api/rpc) — avoids Studio CORS blocks. */
 const RPC_ENDPOINT = "/api/rpc";
@@ -35,7 +35,7 @@ export type Policy = {
   premium: number;
   coverage: number;
   active: boolean;
-  created_at: string;
+  created_at: number;
 };
 
 export type Incident = {
@@ -43,11 +43,12 @@ export type Incident = {
   reporter: string;
   evidence_url: string;
   description: string;
-  status: "pending" | "confirmed_violation" | "rejected" | "paid";
+  status: "pending" | "confirmed_violation" | "confirmed_no_payout" | "rejected" | "paid";
   severity: "none" | "low" | "medium" | "high" | "critical";
   confidence: number;
   reasoning: string;
   payout_amount: number;
+  reported_at: number;
 };
 
 export type ExternalWallet = {
